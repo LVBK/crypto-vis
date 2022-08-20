@@ -80,34 +80,54 @@
         },
       };
       const chains = [
-        { id: "networks", label: "Networks" },
         { id: "btc", label: "Bitcoin" },
         { id: "eth", label: "Ethereum" },
         { id: "bnb", label: "BNB" },
+        { id: "ctk", label: "Shentu" },
       ];
       const categories = [
         { id: "category", label: "Categories" },
         { id: "amm", label: "AMM" },
         { id: "lending", label: "Lending" },
+        { id: "layer2", label: "Layer 2" },
+        { id: "meme", label: "Meme" },
+        { id: "fantoken", label: "Fan token" },
+        { id: "ido", label: "IDO" },
+        { id: "staking", label: "Staking" },
+        { id: "farming", label: "Farming" },
+        { id: "oracle", label: "Oracle" },
+        { id: "storage", label: "Storage" },
+        { id: "metaverse", label: "Metaverse" },
+        { id: "web3", label: "Web3" },
+        { id: "synthetic", label: "Synthetic" },
+        { id: "wallet", label: "Wallet" },
+        { id: "bridge", label: "Bridge" },
+        { id: "derivative", label: "Derivative" },
+        { id: "nft", label: "NFT" },
+        { id: "gaming", label: "Gaming" },
+        { id: "insurance", label: "Insurance" },
+        { id: "aggregator", label: "Aggregator" },
+        { id: "multichain", label: "Multichain" },
+        { id: "stablecoin", label: "Stablecoin" },
+        { id: "asset", label: "Asset Management" },
+        { id: "launchpad", label: "Launchpad" },
+        { id: "dao", label: "DAO" },
+        { id: "cex", label: "CEX" },
+        { id: "dex", label: "DEX" },
+        { id: "security", label: "Security" },
       ];
       const projects = [
+        // {
+        //   id: "uni",
+        //   label: "Uniswap",
+        //   category: ["amm"],
+        //   chain: ["eth"],
+        // },
         {
-          id: "uni",
-          label: "Uniswap",
-          category: ["amm"],
+          id: "people",
+          label: "PEOPLE",
+          category: ["meme", "dao"],
           chain: ["eth"],
-        },
-        {
-          id: "cake",
-          label: "Pancake",
-          category: ["amm"],
-          chain: ["bnb"],
-        },
-        {
-          id: "xvs",
-          label: "Venus",
-          category: ["lending"],
-          chain: ["bnb"],
         },
       ];
       const institutes = [
@@ -116,14 +136,59 @@
           label: "Institutes",
         },
         {
+          id: "paradigm",
+          label: "Paradigm",
+        },
+        {
+          id: "a16z",
+          label: "A16Z",
+        },
+        {
+          id: "multicoin",
+          label: "Multicoin",
+        },
+        { id: "polychain", label: "Polychain" },
+        { id: "unionsquare", label: "Union Square" },
+        {
+          id: "binance",
+          label: "Binance",
+          portfolio: ["ctk"],
+        },
+        { id: "electric", label: "Electric" },
+        { id: "variant", label: "Variant" },
+        { id: "sequoia", label: "Sequoia" },
+        { id: "coinbase", label: "Coinbase Ventures", portfolio: ["ctk"] },
+        { id: "fabric", label: "Fabric Ventures" },
+        { id: "blockchaincapital", label: "Blockchain Capital" },
+        { id: "mechanism", label: "Mechanism" },
+        { id: "arrington", label: "Arrington XRP", portfolio: ["ctk"] },
+        {
           id: "alameda",
           label: "Alameda Research",
           portfolio: [],
         },
         {
-          id: "binance",
-          label: "Binance",
+          id: "dragonfly",
+          label: "Dragonfly",
           portfolio: [],
+        },
+        {
+          id: "pantera",
+          label: "Pantera",
+          portfolio: [],
+        },
+        {
+          id: "hashed",
+          label: "Hashed",
+          portfolio: [],
+        },
+      ];
+
+      const portfolios = [
+        {
+          id: "watchlist",
+          label: "Watchlist",
+          portfolio: ["btc", "eth", "bnb", "people", "ctk"],
         },
       ];
 
@@ -135,7 +200,8 @@
       //Node start
       const chainNodes = chains.map((i, index) => ({
         ...i,
-        color: index > 0 ? colors.chain : colors.blackWhite,
+        // color: index > 0 ? colors.chain : colors.blackWhite,
+        color: colors.chain,
       }));
       const categoryNodes = categories.map((i, index) => ({
         ...i,
@@ -152,15 +218,21 @@
         color: colors.project,
       }));
 
+      const portfolioNodes = portfolios.map((i) => ({
+        ...i,
+        color: colors.blackWhite,
+      }));
+
       const nodesSet = new vis.DataSet([
         ...chainNodes,
         ...categoryNodes,
         ...instituteNodes,
         ...projectNodes,
+        ...portfolioNodes,
       ]);
 
       //Edge start
-      const groups = [chainNodes, categoryNodes, instituteNodes];
+      const groups = [categoryNodes, instituteNodes];
 
       const groupEdges = groups
         .map((group) =>
@@ -176,19 +248,19 @@
         )
         .reduce((r, g) => [...r, ...g], []);
 
-      const projectEdgesGenerator = (map) => (projects) => (key, reverse) => {
+      const edgesGenerator = (nodeMap) => (nodes) => (key, reverse) => {
         const edges = [];
-        projects.forEach((p) => {
-          _.uniq(p[key]).forEach((c) => {
-            if (map[c] && map[c].id) {
+        nodes.forEach((p) => {
+          _.uniq(p[key] || []).forEach((c) => {
+            if (nodeMap[c] && nodeMap[c].id) {
               edges.push(
                 reverse
                   ? {
                       from: p.id,
-                      to: map[c].id,
+                      to: nodeMap[c].id,
                     }
                   : {
-                      from: map[c].id,
+                      from: nodeMap[c].id,
                       to: p.id,
                     }
               );
@@ -198,21 +270,30 @@
         return edges;
       };
 
-      const chainToProjectEdges =
-        projectEdgesGenerator(chainsMap)(projects)("chain");
+      const chainToProjectEdges = edgesGenerator(chainsMap)(projects)("chain");
       const categoryToProjectEdges =
-        projectEdgesGenerator(categoriesMap)(projects)("category");
+        edgesGenerator(categoriesMap)(projects)("category");
       const projectToInstituteEdges =
-        projectEdgesGenerator(projectsMap)(institutes)("portfolio");
-      const chainToInstituteEdges = projectEdgesGenerator(chainsMap)(
-        institutes
-      )("portfolio", true);
+        edgesGenerator(projectsMap)(institutes)("portfolio");
+      const chainToInstituteEdges = edgesGenerator(chainsMap)(institutes)(
+        "portfolio",
+        true
+      );
+      const projectToPortfolioEdges =
+        edgesGenerator(projectsMap)(portfolios)("portfolio");
+      const chainToPortfolioEdges = edgesGenerator(chainsMap)(portfolios)(
+        "portfolio",
+        true
+      );
+
       const edges = [
         ...groupEdges,
         ...chainToProjectEdges,
         ...categoryToProjectEdges,
         ...projectToInstituteEdges,
         ...chainToInstituteEdges,
+        ...projectToPortfolioEdges,
+        ...chainToPortfolioEdges,
       ];
       console.log("edges:", edges);
       const edgesSet = new vis.DataSet(edges);
