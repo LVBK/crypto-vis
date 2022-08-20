@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Network</title>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <style type="text/css">
+      #mynetwork {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mynetwork"></div>
+    <script type="text/javascript">
+      const colors = {
+        chain: {
+          border: "green",
+          background: "lightgreen",
+          highlight: {
+            border: "green",
+            background: "lightgreen",
+          },
+          hover: {
+            border: "green",
+            background: "lightgreen",
+          },
+        },
+        category: {
+          border: "red",
+          background: "#FFCCCB",
+          highlight: {
+            border: "red",
+            background: "#FFCCCB",
+          },
+          hover: {
+            border: "red",
+            background: "#FFCCCB",
+          },
+        },
+        project: {
+          border: "#2B7CE9",
+          background: "#97C2FC",
+          highlight: {
+            border: "#2B7CE9",
+            background: "#D2E5FF",
+          },
+          hover: {
+            border: "#2B7CE9",
+            background: "#D2E5FF",
+          },
+        },
+        institute: {
+          border: "yellow",
+          background: "#FFFFE0",
+          highlight: {
+            border: "yellow",
+            background: "#FFFFE0",
+          },
+          hover: {
+            border: "yellow",
+            background: "#FFFFE0",
+          },
+        },
+        blackWhite: {
+          border: "black",
+          background: "white",
+          highlight: {
+            border: "black",
+            background: "white",
+          },
+          hover: {
+            border: "black",
+            background: "white",
+          },
+        },
+      };
+      const chains = [
+        { id: "networks", label: "Networks" },
+        { id: "btc", label: "Bitcoin" },
+        { id: "eth", label: "Ethereum" },
+        { id: "bnb", label: "BNB" },
+      ];
+      const categories = [
+        { id: "category", label: "Categories" },
+        { id: "amm", label: "AMM" },
+        { id: "lending", label: "Lending" },
+      ];
+      const projects = [
+        {
+          id: "uni",
+          label: "Uniswap",
+          category: ["amm"],
+          chain: ["eth"],
+        },
+        {
+          id: "cake",
+          label: "Pancake",
+          category: ["amm"],
+          chain: ["bnb"],
+        },
+        {
+          id: "xvs",
+          label: "Venus",
+          category: ["lending"],
+          chain: ["bnb"],
+        },
+      ];
+      const institutes = [
+        {
+          id: "institutes",
+          label: "Institutes",
+        },
+        {
+          id: "alameda",
+          label: "Alameda Research",
+          portfolio: [],
+        },
+        {
+          id: "binance",
+          label: "Binance",
+          portfolio: [],
+        },
+      ];
+
+      const chainsMap = _.keyBy(chains, "id");
+      const categoriesMap = _.keyBy(categories, "id");
+      const institutesMap = _.keyBy(institutes, "id");
+      const projectsMap = _.keyBy(projects, "id");
+
+      //Node start
+      const chainNodes = chains.map((i, index) => ({
+        ...i,
+        color: index > 0 ? colors.chain : colors.blackWhite,
+      }));
+      const categoryNodes = categories.map((i, index) => ({
+        ...i,
+        color: index > 0 ? colors.category : colors.blackWhite,
+      }));
+
+      const instituteNodes = institutes.map((i, index) => ({
+        ...i,
+        color: index > 0 ? colors.institute : colors.blackWhite,
+      }));
+
+      const projectNodes = projects.map((i) => ({
+        ...i,
+        color: colors.project,
+      }));
+
+      const nodesSet = new vis.DataSet([
+        ...chainNodes,
+        ...categoryNodes,
+        ...instituteNodes,
+        ...projectNodes,
+      ]);
+
+      //Edge start
+      const groups = [chainNodes, categoryNodes, instituteNodes];
+
+      const groupEdges = groups
+        .map((group) =>
+          group
+            .map((i, index, arr) => {
+              if (index === 0) {
+                return undefined;
+              }
+              const firstNodeId = arr[0].id;
+              return { from: firstNodeId, to: i.id };
+            })
+            .filter(Boolean)
+        )
+        .reduce((r, g) => [...r, ...g], []);
+
+      const projectEdgesGenerator = (map) => (projects) => (key, reverse) => {
+        const edges = [];
+        projects.forEach((p) => {
+          _.uniq(p[key]).forEach((c) => {
+            if (map[c] && map[c].id) {
+              edges.push(
+                reverse
+                  ? {
+                      from: p.id,
+                      to: map[c].id,
+                    }
+                  : {
+                      from: map[c].id,
+                      to: p.id,
+                    }
+              );
+            }
+          });
+        });
+        return edges;
+      };
+
+      const chainToProjectEdges =
+        projectEdgesGenerator(chainsMap)(projects)("chain");
+      const categoryToProjectEdges =
+        projectEdgesGenerator(categoriesMap)(projects)("category");
+      const projectToInstituteEdges =
+        projectEdgesGenerator(projectsMap)(institutes)("portfolio");
+      const chainToInstituteEdges = projectEdgesGenerator(chainsMap)(
+        institutes
+      )("portfolio", true);
+      const edges = [
+        ...groupEdges,
+        ...chainToProjectEdges,
+        ...categoryToProjectEdges,
+        ...projectToInstituteEdges,
+        ...chainToInstituteEdges,
+      ];
+      console.log("edges:", edges);
+      const edgesSet = new vis.DataSet(edges);
+
+      const container = document.getElementById("mynetwork");
+      const data = {
+        nodes: nodesSet,
+        edges: edgesSet,
+      };
+      const options = {};
+      const network = new vis.Network(container, data, options);
+    </script>
+  </body>
+</html>
